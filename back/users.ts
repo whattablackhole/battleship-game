@@ -4,23 +4,27 @@ import { LoginUserMessage } from "./interfaces/messages.js";
 import { LoginResponseMessage, User } from "./interfaces/user.js";
 
 export class UsersManager {
-  login(message: LoginUserMessage): LoginResponseMessage {
-    const index = db.users.size;
-
+  getUserByIndex(index: number): User {
+    return db.users.get(index);
+  }
+  login(
+    message: LoginUserMessage,
+    connectionIndex: number
+  ): LoginResponseMessage {
     const dbUser: User = {
-      id: index,
+      index: connectionIndex,
       name: message.data.name,
       password: message.data.password,
     };
 
-    db.users.set(index, dbUser);
+    db.users.set(connectionIndex, dbUser);
 
     return {
       data: {
         name: message.data.name,
         error: false,
         errorText: "",
-        index,
+        index: connectionIndex,
       },
       id: 0,
       type: "reg",

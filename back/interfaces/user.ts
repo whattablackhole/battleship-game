@@ -1,7 +1,7 @@
 export interface User {
   name: string;
   password: string;
-  id: number;
+  index: number;
 }
 
 export interface LoginResponseMessage {

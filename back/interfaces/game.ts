@@ -1,3 +1,5 @@
+import { Ship } from "./ship";
+
 export enum GameStatus {
   "waiting_for_ship_delivery",
   "ready",
@@ -10,7 +12,7 @@ export enum PlayersStateStatus {
 
 export interface Game {
   id: number;
-  players: number[];
+  players: { index: number; ships: Ship[] }[];
   status: GameStatus;
   state: {
     playerState: Map<

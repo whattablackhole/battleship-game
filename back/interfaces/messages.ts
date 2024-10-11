@@ -1,5 +1,5 @@
-import { Room } from "./room";
-import { Ship } from "./ship";
+import { Room } from "./room.js";
+import { Ship } from "./ship.js";
 
 export class Message {
   type: string;
@@ -11,22 +11,32 @@ export class Message {
     this.data = data;
   }
 }
-
+export interface StartGameMessage extends Message {
+  id: 0;
+  type: "start_game";
+  data: StartGameData;
+}
 export interface StartGameData {
-  gameId: number;
-  currentPlayerIndex: number | string;
+  currentPlayerIndex: number;
   ships: Ship[];
 }
 
+
+
+export interface AddUserMessage extends Message {
+  id: 0;
+  type: "add_user_to_room";
+  data: AddUserData;
+}
 export interface AddUserData {
-  indexRoom: number | string;
+  indexRoom: number;
 }
 
 export interface CreateGameMessage extends Message {
   type: "create_game";
   data: {
-    idGame: number | string;
-    idPlayer: number | string;
+    idGame: number;
+    idPlayer: number;
   };
   id: 0;
 }

@@ -1,36 +1,9 @@
-import { Game } from "./interfaces/game";
-import { Room } from "./interfaces/room";
-import { User } from "./interfaces/user";
+import { Game } from "./interfaces/game.js";
+import { Room } from "./interfaces/room.js";
+import { User } from "./interfaces/user.js";
 
 export const db = {
-  users: new Map<number, User>([
-    [1, { id: 1, name: "vasya", password: "good" }],
-  ]),
-  rooms: new Map<number, Room>([
-    [
-      1,
-      {
-        roomId: 1,
-        roomUsers: [
-          {
-            name: "vasya",
-            index: 2,
-          },
-        ],
-      },
-    ],
-    [
-      2,
-      {
-        roomId: 2,
-        roomUsers: [
-          {
-            name: "kolya",
-            index: 3,
-          },
-        ],
-      },
-    ],
-  ]),
+  users: new Map<number, User>(),
+  rooms: new Map<number, Room>(),
   games: new Map<number, Game>(),
 };

@@ -1,7 +1,9 @@
 export interface Room {
   roomId: number;
-  roomUsers: {
-    name: string;
-    index: number;
-  }[];
+  roomUsers: RoomUser[];
+}
+
+export interface RoomUser {
+  name: string;
+  index: number;
 }
