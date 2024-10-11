@@ -13,7 +13,7 @@ export class RoomManager {
     return index;
   }
 
-  public update_rooms(): UpdateRoomMessage {
+  public updateRooms(): UpdateRoomMessage {
     const rooms = this.getFreeRooms();
 
     const message = {

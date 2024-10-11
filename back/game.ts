@@ -90,7 +90,7 @@ export class GameManager {
     const game = db.games.get(gameId);
     const messages: StartGameMessage[] = [];
 
-    game.players.forEach((player, index) => {
+    game.players.forEach((player) => {
       const playerGameGridState: number[][] = [
         [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
         [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
