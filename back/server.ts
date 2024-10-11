@@ -1,8 +1,12 @@
 import WebSocket, { WebSocketServer } from "ws";
 import { UsersManager } from "./users.js";
-import { Message } from "./interfaces/message.js";
 import { SERVER_SETTINGS } from "./server-settings.js";
 import { RoomManager } from "./rooms.js";
+import {
+  LoginUserMessage,
+  Message,
+  UpdateRoomMessage,
+} from "./interfaces/messages.js";
 
 export class App {
   private connections = new Map<WebSocket, number>();
@@ -12,12 +16,13 @@ export class App {
     private roomsManager = new RoomManager()
   ) {}
 
-  public update_rooms() {
+  public update_rooms(): UpdateRoomMessage {
     const rooms = this.roomsManager.getFreeRooms();
+
     const message = {
       id: 0,
-      data: JSON.stringify(rooms),
-      type: "update_room",
+      data: rooms,
+      type: "update_room" as const,
     };
 
     return message;
@@ -36,7 +41,10 @@ export class App {
 
         switch (request.type) {
           case "reg":
-            const response = this.usersManager.login(request);
+            const message: LoginUserMessage = (request.data = JSON.parse(
+              request.data as string
+            ));
+            const response = this.usersManager.login(message);
             ws.send(
               JSON.stringify({
                 ...response,

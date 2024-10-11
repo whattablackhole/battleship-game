@@ -1,5 +1,6 @@
 import { db } from "./db.js";
-import { CreateRoomMessage } from "./interfaces/data.js";
+import { CreateRoomMessage } from "./interfaces/messages.js";
+import { Room } from "./interfaces/room.js";
 
 export class RoomManager {
   public createRoom(message: CreateRoomMessage) {
@@ -22,9 +23,11 @@ export class RoomManager {
     }
 
     room.roomUsers.push(user);
+
+    return room.roomUsers.length === 2
   }
 
-  public getFreeRooms() {
+  public getFreeRooms(): Room[] {
     return db.rooms
       .values()
       .filter((r) => {

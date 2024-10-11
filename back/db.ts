@@ -1,8 +1,11 @@
+import { Game } from "./interfaces/game";
 import { Room } from "./interfaces/room";
 import { User } from "./interfaces/user";
 
 export const db = {
-  users: new Map<number, User>([[1, { id: 1, name: "vasya", password: "good" }]]),
+  users: new Map<number, User>([
+    [1, { id: 1, name: "vasya", password: "good" }],
+  ]),
   rooms: new Map<number, Room>([
     [
       1,
@@ -29,6 +32,5 @@ export const db = {
       },
     ],
   ]),
+  games: new Map<number, Game>(),
 };
-
-
