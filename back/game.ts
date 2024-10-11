@@ -9,6 +9,7 @@ import {
   PlayerTurnMessage,
   RandomAttackMessage,
   StartGameMessage,
+  UpdateWinnersMessage,
 } from "./interfaces/messages.js";
 import { RoomUser } from "./interfaces/room.js";
 
@@ -86,6 +87,29 @@ export class GameManager {
     };
   }
 
+  public getWinnersStatistics(): UpdateWinnersMessage {
+    const result = new Map<number, { wins: number; name: string }>();
+    db.games
+      .values()
+      .filter((g) => g.status === GameStatus.Fininished)
+      .forEach((g) => {
+        if (result.has(g.state.winner)) {
+          result.get(g.state.winner).wins++;
+          console.log(result.get(g.state.winner).wins);
+        } else {
+          result.set(g.state.winner, {
+            wins: 1,
+            name: db.users.get(g.state.winner).name,
+          });
+        }
+      });
+    return {
+      id: 0,
+      data: result.values().toArray(),
+      type: "update_winners",
+    };
+  }
+
   public startGame(gameId: number): StartGameMessage[] {
     const game = db.games.get(gameId);
     const messages: StartGameMessage[] = [];
@@ -158,6 +182,13 @@ export class GameManager {
     attackResponseMessage: AttackResponseMessage;
   } {
     const game = db.games.get(msg.data.gameId);
+
+    if (
+      game.state.currentPlayer !== msg.data.indexPlayer ||
+      game.status === GameStatus.Fininished
+    ) {
+      throw new Error("Invalid action");
+    }
 
     const [nextPlayerIndex, state] = game.state.playerState
       .entries()

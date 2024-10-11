@@ -6,11 +6,19 @@ import { User } from "./interfaces/user.js";
 export class RoomManager {
   private index = 0;
 
-  public createRoom(): number {
-    db.rooms.set(this.index, { roomId: this.index, roomUsers: [] });
+  public createRoomAndAddSelf(user: User): boolean {
+    if (
+      db.rooms
+        .values()
+        .some((r) => r.roomUsers.some((r) => r.index === user.index))
+    ) {
+      throw new Error("Invalid action");
+    }
+    const room: Room = { roomId: this.index, roomUsers: [] };
+    db.rooms.set(this.index, room);
     const index = this.index;
     this.index++;
-    return index;
+    return this.addUserToRoom(user, index);
   }
 
   public updateRooms(): UpdateRoomMessage {
@@ -29,8 +37,12 @@ export class RoomManager {
     return db.rooms.get(roomIndex).roomUsers;
   }
 
-  public addUserToRoom(user: User, roomIndex: number) {
+  public addUserToRoom(user: User, roomIndex: number): boolean {
     const room = db.rooms.get(roomIndex);
+
+    if (room.roomUsers.some((u) => u.index === user.index)) {
+      return false;
+    }
 
     if (!room) {
       throw new Error("No room found.");

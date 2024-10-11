@@ -6,6 +6,7 @@ import {
   AddShipsMessage,
   AddUserMessage,
   AttackMessage,
+  AttackResponseMessage,
   FinishGameMessage,
   LoginUserMessage,
   Message,
@@ -58,9 +59,6 @@ export class BattleShipApp {
     );
 
     wss.on("connection", (ws) => {
-      this.connections.set(ws, this.connectionIndex);
-      this.connectionIndex++;
-
       ws.on("error", console.error);
       ws.once("close", () => {
         const userID = this.connections.get(ws);
@@ -76,28 +74,42 @@ export class BattleShipApp {
           case "reg": {
             const responseMessage = this.usersManager.login(
               msg as LoginUserMessage,
-              this.connections.get(ws)
+              this.connectionIndex
             );
-            
+
+            if (!responseMessage.data.error) {
+              this.connections.set(ws, this.connectionIndex);
+              this.connectionIndex++;
+            }
+
             ws.send(this.serializeMessage(responseMessage));
             const rooms = this.roomsManager.updateRooms();
+            const winnersStatistics = this.gamesManager.getWinnersStatistics();
+            ws.send(this.serializeMessage(winnersStatistics));
             ws.send(this.serializeMessage(rooms));
             console.log(
               `Command result: ${JSON.stringify(responseMessage, null, "\t")}`
             );
-            console.log(
-              `${JSON.stringify(rooms, null, "\t")}`
-            );
+            console.log(`${JSON.stringify(rooms, null, "\t")}`);
+            console.log(`${JSON.stringify(winnersStatistics, null, "\t")}`);
             break;
           }
 
           case "add_user_to_room": {
             const userIndex = this.connections.get(ws);
             const user = this.usersManager.getUserByIndex(userIndex);
-            this.roomsManager.addUserToRoom(
+            const ready = this.roomsManager.addUserToRoom(
               user,
               (msg as AddUserMessage).data.indexRoom
             );
+
+            if (!ready) {
+              console.log(
+                `Command result: Ignore. Can't add user that is already there.`
+              );
+              break;
+            }
+
             const rooms = this.roomsManager.updateRooms();
             const users = this.roomsManager.getRoomUsers(
               (msg as AddUserMessage).data.indexRoom
@@ -115,9 +127,7 @@ export class BattleShipApp {
             console.log(
               `Command result: ${JSON.stringify(messages, null, "\t")}`
             );
-            console.log(
-              `${JSON.stringify(rooms, null, "\t")}`
-            );
+            console.log(`${JSON.stringify(rooms, null, "\t")}`);
             break;
           }
 
@@ -148,19 +158,28 @@ export class BattleShipApp {
               });
 
               console.log(
-                `Command result: ${JSON.stringify(startGameMessages, null, "\t")}`
+                `Command result: ${JSON.stringify(
+                  startGameMessages,
+                  null,
+                  "\t"
+                )}`
               );
-              console.log(
-                `${JSON.stringify(turnMessage, null, "\t")}`
-              );
+              console.log(`${JSON.stringify(turnMessage, null, "\t")}`);
             }
             break;
           }
 
           case "attack": {
             const message = msg as AttackMessage;
-            const { attackResponseMessage, gameOver } =
-              this.gamesManager.handleAttack(message);
+            let attackResponseMessage: AttackResponseMessage, gameOver: boolean;
+
+            try {
+              ({ attackResponseMessage, gameOver } =
+                this.gamesManager.handleAttack(message));
+            } catch {
+              break;
+            }
+
             const players = this.gamesManager.getPlayersByGameId(
               message.data.gameId
             );
@@ -186,19 +205,36 @@ export class BattleShipApp {
               connection.send(gameStateData);
             });
 
+            if (gameOver) {
+              const winnersStatistics = this.serializeMessage(
+                this.gamesManager.getWinnersStatistics()
+              );
+              this.connections.forEach((_, c) => {
+                c.send(winnersStatistics);
+              });
+            }
+
             console.log(
-              `Command result: ${JSON.stringify(attackResponseMessage, null, "\t")}`
+              `Command result: ${JSON.stringify(
+                attackResponseMessage,
+                null,
+                "\t"
+              )}`
             );
-            console.log(
-              `${JSON.stringify(gameStateMessage, null, "\t")}`
-            );
+            console.log(`${JSON.stringify(gameStateMessage, null, "\t")}`);
             break;
           }
 
           case "randomAttack": {
             const message = msg as RandomAttackMessage;
-            const { attackResponseMessage, gameOver } =
-              this.gamesManager.handleRandomAttack(message);
+            let attackResponseMessage: AttackResponseMessage, gameOver: boolean;
+
+            try {
+              ({ attackResponseMessage, gameOver } =
+                this.gamesManager.handleRandomAttack(message));
+            } catch {
+              break;
+            }
             const players = this.gamesManager.getPlayersByGameId(
               message.data.gameId
             );
@@ -216,35 +252,51 @@ export class BattleShipApp {
             }
             const attackData = this.serializeMessage(attackResponseMessage);
             const gameStateData = this.serializeMessage(gameStateMessage);
+
             players.forEach((p) => {
               const connection = this.getConnectionByIndex(p.index);
               connection.send(attackData);
               connection.send(gameStateData);
             });
 
+            if (gameOver) {
+              const winnersStatistics = this.serializeMessage(
+                this.gamesManager.getWinnersStatistics()
+              );
+              this.connections.forEach((_, c) => {
+                c.send(winnersStatistics);
+              });
+            }
+
             console.log(
-              `Command result: ${JSON.stringify(attackResponseMessage, null, "\t")}`
+              `Command result: ${JSON.stringify(
+                attackResponseMessage,
+                null,
+                "\t"
+              )}`
             );
-            console.log(
-              `${JSON.stringify(gameStateMessage, null, "\t")}`
-            );
+            console.log(`${JSON.stringify(gameStateMessage, null, "\t")}`);
             break;
           }
 
           case "create_room":
-            const roomIndex = this.roomsManager.createRoom();
-            const userIndex = this.connections.get(ws);
-            const user = this.usersManager.getUserByIndex(userIndex);
-            this.roomsManager.addUserToRoom(user, roomIndex);
-            const rooms = this.roomsManager.updateRooms();
-            const message = this.serializeMessage(rooms);
-            this.connections.forEach((_, ws) => {
-              ws.send(message);
-            });
-            console.log(
-              `Command result: ${JSON.stringify(rooms, null, "\t")}`
-            );
-            break;
+            try {
+              const userIndex = this.connections.get(ws);
+              const user = this.usersManager.getUserByIndex(userIndex);
+              this.roomsManager.createRoomAndAddSelf(user);
+              const rooms = this.roomsManager.updateRooms();
+              const message = this.serializeMessage(rooms);
+              this.connections.forEach((_, ws) => {
+                ws.send(message);
+              });
+              console.log(
+                `Command result: ${JSON.stringify(rooms, null, "\t")}`
+              );
+            } catch {
+              console.log(`Command result: Failed`);
+            } finally {
+              break;
+            }
         }
       });
     });

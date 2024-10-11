@@ -111,3 +111,13 @@ export interface LoginResponseMessage {
   type: "reg";
 }
 
+export interface WinnersData {
+  name: string;
+  wins: number;
+}
+
+export interface UpdateWinnersMessage {
+  type: "update_winners";
+  data: WinnersData[];
+  id: 0;
+}
