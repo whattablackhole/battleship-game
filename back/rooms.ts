@@ -5,13 +5,12 @@ import { User } from "./interfaces/user.js";
 
 export class RoomManager {
   private index = 0;
-  
+
   public createRoom(): number {
     db.rooms.set(this.index, { roomId: this.index, roomUsers: [] });
-    process.nextTick(()=> {
-      this.index++;
-    });
-    return this.index;
+    const index = this.index;
+    this.index++;
+    return index;
   }
 
   public update_rooms(): UpdateRoomMessage {
@@ -29,7 +28,6 @@ export class RoomManager {
   public getRoomUsers(roomIndex: number): RoomUser[] {
     return db.rooms.get(roomIndex).roomUsers;
   }
-
 
   public addUserToRoom(user: User, roomIndex: number) {
     const room = db.rooms.get(roomIndex);

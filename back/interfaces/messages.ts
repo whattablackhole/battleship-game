@@ -1,5 +1,5 @@
 import { Room } from "./room.js";
-import { Ship } from "./ship.js";
+import { Position, Ship } from "./ship.js";
 
 export class Message {
   type: string;
@@ -12,7 +12,6 @@ export class Message {
   }
 }
 export interface StartGameMessage extends Message {
-  id: 0;
   type: "start_game";
   data: StartGameData;
 }
@@ -21,10 +20,45 @@ export interface StartGameData {
   ships: Ship[];
 }
 
+export interface PlayerTurnMessage extends Message {
+  data: { currentPlayer: number };
+}
 
+export interface AttackMessage extends Message {
+  type: "attack";
+  data: {
+    gameId: number;
+    x: number;
+    y: number;
+    indexPlayer: number;
+  };
+}
+
+export interface RandomAttackMessage extends Message {
+  type: "randomAttack";
+  data: {
+    gameId: number;
+    indexPlayer: number;
+  };
+}
+
+export interface AttackResponseMessage extends Message {
+  type: "attack";
+  data: {
+    position: Position;
+    currentPlayer: number;
+    status: "miss" | "killed" | "shot";
+  };
+}
+
+export interface FinishGameMessage extends Message {
+  type: "finish";
+  data: {
+    winPlayer: number;
+  };
+}
 
 export interface AddUserMessage extends Message {
-  id: 0;
   type: "add_user_to_room";
   data: AddUserData;
 }
@@ -38,11 +72,9 @@ export interface CreateGameMessage extends Message {
     idGame: number;
     idPlayer: number;
   };
-  id: 0;
 }
 
 export interface CreateRoomMessage extends Message {
-  id: 0;
   data: "";
   type: "create_room";
 }
@@ -59,11 +91,6 @@ export interface AddShipsMessage extends Message {
 export interface UpdateRoomMessage extends Message {
   type: "update_room";
   data: Room[];
-}
-
-export interface CreateGameData {
-  idGame: number;
-  idPlayer: number;
 }
 
 export interface LoginUserMessage extends Message {
