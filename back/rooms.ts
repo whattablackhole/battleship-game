@@ -52,6 +52,14 @@ export class RoomManager {
       throw new Error("Room is full.");
     }
 
+    // delete room if user created a room and joined another
+    const roomToDelete = db.rooms
+      .values()
+      .find((r) => r.roomUsers.some((r) => r.index === user.index));
+    if (roomToDelete) {
+      db.rooms.delete(roomToDelete.roomId);
+    }
+
     room.roomUsers.push({ index: user.index, name: user.name });
 
     return room.roomUsers.length === 2;

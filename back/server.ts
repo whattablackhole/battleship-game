@@ -134,10 +134,17 @@ export class BattleShipApp {
           case "add_user_to_room": {
             const userIndex = this.connections.get(ws);
             const user = this.usersManager.getUserByIndex(userIndex);
-            const ready = this.roomsManager.addUserToRoom(
-              user,
-              (msg as AddUserMessage).data.indexRoom
-            );
+            let ready = false;
+
+            try {
+              ready = this.roomsManager.addUserToRoom(
+                user,
+                (msg as AddUserMessage).data.indexRoom
+              );
+            } catch (err) {
+              console.log(`Command result: Failed: ${err.message}`);
+              break;
+            }
 
             if (!ready) {
               console.log(
@@ -319,7 +326,10 @@ export class BattleShipApp {
             } else {
               const turn = this.gamesManager.getPlayerTurn(message.data.gameId);
               if (!gameOver && turn.data.currentPlayer < 0) {
-               this.handleBotAction(message.data.gameId,turn.data.currentPlayer);
+                this.handleBotAction(
+                  message.data.gameId,
+                  turn.data.currentPlayer
+                );
               }
             }
 
