@@ -14,6 +14,7 @@ import {
   RandomAttackMessage,
 } from "./interfaces/messages.js";
 import { GameManager } from "./game.js";
+import { Bot, BotManager } from "./bot.js";
 
 export class BattleShipApp {
   private connections = new Map<WebSocket, number>();
@@ -22,7 +23,8 @@ export class BattleShipApp {
   constructor(
     private usersManager: UsersManager = new UsersManager(),
     private roomsManager = new RoomManager(),
-    private gamesManager = new GameManager()
+    private gamesManager = new GameManager(),
+    private botsManager = new BotManager()
   ) {}
 
   private serializeMessage(message: Message): string {
@@ -45,6 +47,40 @@ export class BattleShipApp {
     return this.connections.entries().find(([ws, index]) => {
       return index === connectionIndex;
     })[0];
+  }
+
+  private handleBotAction(gameId: number, botId: number) {
+    const bot = this.botsManager.getBot(botId);
+
+    let attackResponseMessage, gameOver;
+    while (
+      this.gamesManager.getPlayerTurn(gameId).data.currentPlayer < 0 &&
+      !gameOver
+    ) {
+      const request = bot.attack();
+      ({ attackResponseMessage, gameOver } =
+        this.gamesManager.handleAttack(request));
+      const players = this.gamesManager.getPlayersByGameId(gameId);
+
+      let gameStateMessage: PlayerTurnMessage | FinishGameMessage;
+
+      if (gameOver) {
+        gameStateMessage = this.gamesManager.finishGame(gameId);
+      } else {
+        gameStateMessage = this.gamesManager.getPlayerTurn(gameId);
+      }
+      const attackData = this.serializeMessage(attackResponseMessage);
+      const gameStateData = this.serializeMessage(gameStateMessage);
+
+      players
+        .filter((p) => p.index > 0)
+        .forEach((p) => {
+          const connection = this.getConnectionByIndex(p.index);
+          connection.send(attackData);
+
+          connection.send(gameStateData);
+        });
+    }
   }
 
   public serve() {
@@ -146,16 +182,18 @@ export class BattleShipApp {
               );
               const turnData = this.serializeMessage(turnMessage);
 
-              players.forEach((player) => {
-                const connection = this.getConnectionByIndex(player.index);
+              players
+                .filter((p) => p.index > 0)
+                .forEach((player) => {
+                  const connection = this.getConnectionByIndex(player.index);
 
-                const startGameMessage = startGameMessages.find(
-                  (m) => m.data.currentPlayerIndex === player.index
-                );
+                  const startGameMessage = startGameMessages.find(
+                    (m) => m.data.currentPlayerIndex === player.index
+                  );
 
-                connection.send(this.serializeMessage(startGameMessage));
-                connection.send(turnData);
-              });
+                  connection.send(this.serializeMessage(startGameMessage));
+                  connection.send(turnData);
+                });
 
               console.log(
                 `Command result: ${JSON.stringify(
@@ -198,12 +236,14 @@ export class BattleShipApp {
             const attackData = this.serializeMessage(attackResponseMessage);
             const gameStateData = this.serializeMessage(gameStateMessage);
 
-            players.forEach((p) => {
-              const connection = this.getConnectionByIndex(p.index);
-              connection.send(attackData);
+            players
+              .filter((p) => p.index > 0)
+              .forEach((p) => {
+                const connection = this.getConnectionByIndex(p.index);
+                connection.send(attackData);
 
-              connection.send(gameStateData);
-            });
+                connection.send(gameStateData);
+              });
 
             if (gameOver) {
               const winnersStatistics = this.serializeMessage(
@@ -212,6 +252,14 @@ export class BattleShipApp {
               this.connections.forEach((_, c) => {
                 c.send(winnersStatistics);
               });
+            } else {
+              const turn = this.gamesManager.getPlayerTurn(message.data.gameId);
+              if (!gameOver && turn.data.currentPlayer < 0) {
+                this.handleBotAction(
+                  message.data.gameId,
+                  turn.data.currentPlayer
+                );
+              }
             }
 
             console.log(
@@ -253,11 +301,13 @@ export class BattleShipApp {
             const attackData = this.serializeMessage(attackResponseMessage);
             const gameStateData = this.serializeMessage(gameStateMessage);
 
-            players.forEach((p) => {
-              const connection = this.getConnectionByIndex(p.index);
-              connection.send(attackData);
-              connection.send(gameStateData);
-            });
+            players
+              .filter((p) => p.index > 0)
+              .forEach((p) => {
+                const connection = this.getConnectionByIndex(p.index);
+                connection.send(attackData);
+                connection.send(gameStateData);
+              });
 
             if (gameOver) {
               const winnersStatistics = this.serializeMessage(
@@ -266,6 +316,11 @@ export class BattleShipApp {
               this.connections.forEach((_, c) => {
                 c.send(winnersStatistics);
               });
+            } else {
+              const turn = this.gamesManager.getPlayerTurn(message.data.gameId);
+              if (!gameOver && turn.data.currentPlayer < 0) {
+               this.handleBotAction(message.data.gameId,turn.data.currentPlayer);
+              }
             }
 
             console.log(
@@ -279,6 +334,15 @@ export class BattleShipApp {
             break;
           }
 
+          case "single_play":
+            const userIndex = this.connections.get(ws);
+            const botPlayer = this.botsManager.createBot();
+
+            const user = this.usersManager.getUserByIndex(userIndex);
+            const message = this.gamesManager.createSinglePlay(user, botPlayer);
+
+            ws.send(this.serializeMessage(message));
+            break;
           case "create_room":
             try {
               const userIndex = this.connections.get(ws);

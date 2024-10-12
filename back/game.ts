@@ -1,3 +1,4 @@
+import { Bot } from "./bot.js";
 import { db } from "./db.js";
 import { GameStatus, PlayersStateStatus } from "./interfaces/game.js";
 import {
@@ -12,6 +13,7 @@ import {
   UpdateWinnersMessage,
 } from "./interfaces/messages.js";
 import { RoomUser } from "./interfaces/room.js";
+import { User } from "./interfaces/user.js";
 
 export class GameManager {
   private gameIndex = 0;
@@ -22,6 +24,7 @@ export class GameManager {
     const game = {
       id: gameID,
       players,
+      singlePlay: false,
       status: GameStatus.Deliver,
       state: {
         currentPlayer: players[Math.round(Math.random())].index,
@@ -46,6 +49,44 @@ export class GameManager {
         type: "create_game",
       };
     });
+  }
+
+  public createSinglePlay(user: User, bot: Bot) {
+    const players = [
+      { index: user.index, ships: [] },
+      { index: bot.id, ships: bot.ships },
+    ];
+    const gameID = this.gameIndex;
+    bot.gameId = gameID;
+    const game = {
+      id: gameID,
+      players,
+      status: GameStatus.Deliver,
+      singlePlay: true,
+      state: {
+        currentPlayer: players[0].index,
+        playerState: new Map([
+          [
+            players[0].index,
+            { playerGameGridState: [], status: PlayersStateStatus.Deliver },
+          ],
+          [
+            players[1].index,
+            { playerGameGridState: [], status: PlayersStateStatus.Ready },
+          ],
+        ]),
+      },
+    };
+
+    this.gameIndex++;
+
+    db.games.set(gameID, game);
+
+    return {
+      id: 0,
+      data: { idGame: gameID, idPlayer: user.index },
+      type: "create_game",
+    };
   }
 
   public addShips(message: AddShipsMessage): {
