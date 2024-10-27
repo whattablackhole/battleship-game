@@ -5,8 +5,8 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
-        "start": "node ./index.js",
-        "start:dev": "nodemon ./index.js",
+        "start": "node ./index.js & npm run start:back",
+        "start:dev": "nodemon ./index.js & npm run start:back",
         "start:back": "nodemon --exec node --no-warnings=ExperimentalWarning --loader ts-node/esm back/server.ts",
         "test": "echo \"Error: no test specified\" && exit 1"
     },

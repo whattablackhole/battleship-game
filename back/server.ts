@@ -43,7 +43,7 @@ export class BattleShipApp {
     return message;
   }
 
-  private getConnectionByIndex(connectionIndex: number): WebSocket {
+  private getConnectionByIndex(connectionIndex: number): WebSocket | null {
     return this.connections.entries().find(([ws, index]) => {
       return index === connectionIndex;
     })[0];
@@ -76,9 +76,9 @@ export class BattleShipApp {
         .filter((p) => p.index > 0)
         .forEach((p) => {
           const connection = this.getConnectionByIndex(p.index);
-          connection.send(attackData);
+          connection?.send(attackData);
 
-          connection.send(gameStateData);
+          connection?.send(gameStateData);
         });
     }
   }
@@ -161,7 +161,7 @@ export class BattleShipApp {
 
             messages.forEach((m) => {
               const connection = this.getConnectionByIndex(m.data.idPlayer);
-              connection.send(this.serializeMessage(m));
+              connection?.send(this.serializeMessage(m));
             });
 
             this.connections.forEach((_, connection) => {
@@ -198,8 +198,8 @@ export class BattleShipApp {
                     (m) => m.data.currentPlayerIndex === player.index
                   );
 
-                  connection.send(this.serializeMessage(startGameMessage));
-                  connection.send(turnData);
+                  connection?.send(this.serializeMessage(startGameMessage));
+                  connection?.send(turnData);
                 });
 
               console.log(
@@ -247,9 +247,9 @@ export class BattleShipApp {
               .filter((p) => p.index > 0)
               .forEach((p) => {
                 const connection = this.getConnectionByIndex(p.index);
-                connection.send(attackData);
+                connection?.send(attackData);
 
-                connection.send(gameStateData);
+                connection?.send(gameStateData);
               });
 
             if (gameOver) {
@@ -312,8 +312,8 @@ export class BattleShipApp {
               .filter((p) => p.index > 0)
               .forEach((p) => {
                 const connection = this.getConnectionByIndex(p.index);
-                connection.send(attackData);
-                connection.send(gameStateData);
+                connection?.send(attackData);
+                connection?.send(gameStateData);
               });
 
             if (gameOver) {
