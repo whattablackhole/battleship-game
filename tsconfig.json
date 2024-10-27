@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+      "module": "esnext",
+      "target": "esnext",
+      "noImplicitAny": true,
+      "removeComments": true,
+      "preserveConstEnums": true,
+      "experimentalDecorators": true,
+      "esModuleInterop": true,
+      "moduleResolution": "node",
+      "allowSyntheticDefaultImports": true,
+      "outDir": "./dist",
+      "rootDir": "."
+    },
+    "include": ["back"]
+  }
